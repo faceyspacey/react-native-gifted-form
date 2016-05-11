@@ -1,19 +1,19 @@
 var React = require('react-native');
 var {
-  Image  
+  Image
 } = React;
 
 
 var GiftedFormManager = require('../GiftedFormManager');
 
 module.exports = {
-  
-  getInitialState() {    
+
+  getInitialState() {
     return {
       validationErrorMessage: null,
     };
   },
-  
+
   propTypes: {
     name: React.PropTypes.string,
     title: React.PropTypes.string,
@@ -21,7 +21,7 @@ module.exports = {
     // image: ,
     widgetStyles: React.PropTypes.object,
     formStyles: React.PropTypes.object,
-    validationImage: React.PropTypes.bool,    
+    validationImage: React.PropTypes.bool,
     openModal: React.PropTypes.func,
     // navigator: ,
     onFocus: React.PropTypes.func,
@@ -29,14 +29,14 @@ module.exports = {
     // If we want to store the state elsewhere (Redux store, for instance), we can use value and Form's onValueChange prop
     value: React.PropTypes.any,
   },
-  
+
   getDefaultProps() {
     return {
       name: '',
       title: '',
       formName: '',
       image: null,
-      widgetStyles: {},      
+      widgetStyles: {},
       formStyles: {},
       validationImage: true,
       openModal: null,
@@ -45,13 +45,14 @@ module.exports = {
       onBlur: () => {},
     };
   },
-  
+
+
   componentDidMount() {
-    // get value from prop
-    if (typeof this.props.value !== 'undefined') {
-      this._setValue(this.props.value);
-      return;
+    //store input on parent form component so it can trigger highlighting all inline errors
+    if(this.props.form) { 
+      this.props.form.inputs[this.props.name] = this;
     }
+
     // get value from store
     var formState = GiftedFormManager.stores[this.props.formName];
     if (typeof formState !== 'undefined') {
@@ -60,7 +61,13 @@ module.exports = {
           value: formState.values[this.props.name],
         });
         this._validate(formState.values[this.props.name]);
+        return;
       }
+    }
+
+    // get value from prop
+    if(typeof this.props.value !== 'undefined') {
+      this._setValue(this.props.value);
     }
   },
 
@@ -76,36 +83,36 @@ module.exports = {
     if (typeof styleNames === 'string') {
       styleNames = [styleNames];
     }
-    
+
     if (typeof this.defaultStyles === 'undefined') {
       this.defaultStyles = {};
     }
-    
+
     var styles = [];
-    
+
     for (let i = 0; i < styleNames.length; i++) {
       if (typeof this.defaultStyles[styleNames[i]] !== 'undefined') {
-        styles.push(this.defaultStyles[styleNames[i]]);        
+        styles.push(this.defaultStyles[styleNames[i]]);
       }
     }
 
     for (let i = 0; i < styleNames.length; i++) {
       if (typeof this.props.formStyles[this.props.type] !== 'undefined') {
         if (typeof this.props.formStyles[this.props.type][styleNames[i]] !== 'undefined') {
-          styles.push(this.props.formStyles[this.props.type][styleNames[i]]);        
+          styles.push(this.props.formStyles[this.props.type][styleNames[i]]);
         }
       }
     }
 
     for (let i = 0; i < styleNames.length; i++) {
       if (typeof this.props.widgetStyles[styleNames[i]] !== 'undefined') {
-        styles.push(this.props.widgetStyles[styleNames[i]]);        
+        styles.push(this.props.widgetStyles[styleNames[i]]);
       }
     }
-    
+
     return styles;
   },
-  
+
   focus() {
     this.refs.input && this.refs.input.focus()
   },
@@ -119,7 +126,7 @@ module.exports = {
     var validators = GiftedFormManager.getValidators(this.props.formName, this.props.name);
     if (Array.isArray(validators.validate)) {
       if (validators.validate.length > 0) {
-        var validation = GiftedFormManager.validateAndParseOne(this.props.name, value, {validate: validators.validate, title: validators.title});      
+        var validation = GiftedFormManager.validateAndParseOne(this.props.name, value, {validate: validators.validate, title: validators.title});
         if (validation.isValid === false) {
           this.setState({
             validationErrorMessage: validation.message
@@ -134,24 +141,24 @@ module.exports = {
       }
     }
   },
-  
+
   _setValue(value) {
     this.setState({
       value: value
     });
-    GiftedFormManager.updateValue(this.props.formName, this.props.name, value);      
+    GiftedFormManager.updateValue(this.props.formName, this.props.name, value);
   },
-  
+
   _onChange(value) {
     this.props.onChangeText && this.props.onChangeText(value); //should maintain similar API to core TextInput component
-    
+
     this._setValue(value);
     this._validate(value);
 
     this.props.onValueChange && this.props.onValueChange();
     // @todo modal widgets validation - the modalwidget row should inform about validation status
   },
-  
+
   // @todo options enable live checking
   _renderValidationError() {
     if (!(typeof this.state.value === 'undefined' || this.state.value === '') && this.state.validationErrorMessage !== null && this.state.validationErrorMessage !== '') {
@@ -174,7 +181,7 @@ module.exports = {
     } else {
       validators = GiftedFormManager.getValidators(this.props.formName, this.props.name);
     }
-    
+
     let toValidate = false;
     if (Array.isArray(validators.validate)) {
       if (validators.validate.length > 0) {
