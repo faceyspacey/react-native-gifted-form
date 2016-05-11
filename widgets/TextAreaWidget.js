@@ -19,14 +19,14 @@ module.exports = React.createClass({
   
   render() {
     return (
-      <View style={this.getStyle('textAreaRow')}>
+      <View ref='rowContainer' style={this.getStyle('textAreaRow')}>
         <TextInput
           style={this.getStyle('textArea')}
           multiline={true}
 
           {...this.props}
           
-          onFocus={() => this.props.onFocus(true)}
+          onFocus={() => this.props.onFocus(this.refs.rowContainer)}
           onChangeText={this._onChange}
           value={this.state.value}
         />
