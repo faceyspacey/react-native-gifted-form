@@ -34,7 +34,7 @@ module.exports = {
 
     var keyboardHeight = 259;
     var keyboardTop = Dimensions.get('window').height - keyboardHeight;
-    
+
     view.measure((x, y, width, height, pageX, pageY) => {
       var inputBottom = pageY + height;
 
@@ -50,13 +50,6 @@ module.exports = {
   componentDidMount() {
     if (this.props.scrollEnabled === true) {
       this._scrollResponder = this.refs.container.getScrollResponder();
-
-      console.log('HELP', this.refs.container, this.refs.container.measure)
-
-      //this.refs.container.measure((x, y, width, height) => {
-      //  this.containerHeight = height;
-      //  console.log('CONTAINER HEIGHT', x, y, width, height)
-      //});
     }
   },
 
