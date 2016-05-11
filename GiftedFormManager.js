@@ -1,38 +1,38 @@
 'use strict';
 
-var validatorjs = require('validator'); 
+var validatorjs = require('validator');
 
 function doValidateOne(k = '', value = undefined, validators = {}) {
   var isValid = null;
   var validate = validators.validate || [];
   var result = [];
-  
+
   for (var i = 0; i < validate.length; i++) {
     if (validate[i].validator === 'undefined') { continue; }
-  
+
     var args = validate[i].arguments;
     args = !Array.isArray(args) ? [args] : args;
     var clonedArgs = args.slice(0);
     clonedArgs.unshift(value);
-  
-  
+
+
     validate[i].message = validate[i].message || '';
-    
+
     var message = validate[i].message.replace('{PATH}', "'"+k+"'");
-  
+
     var title = validators.title;
     if (title) {
-      message = message.replace('{TITLE}', title);            
+      message = message.replace('{TITLE}', title);
     }
-  
+
     message = message.replace(/{ARGS\[(\d+)\]}/g, function (replace, argIndex) {
       var val = args[argIndex];
       return val !== undefined ? val : '';
     });
-  
+
     if (typeof validate[i].validator === 'function') {
       isValid = validate[i].validator.apply(null, clonedArgs);
-      
+
       // handle custom validators
       result.push({
         validator: 'Custom',
@@ -46,13 +46,13 @@ function doValidateOne(k = '', value = undefined, validators = {}) {
         console.warn('GiftedForm Error: Validator is not correct for: '+k);
         continue;
       }
-      
+
       if (validate[i].validator === 'isLength') {
         if (typeof clonedArgs[0] === 'string') {
           clonedArgs[0] = clonedArgs[0].trim();
         }
       }
-      
+
       isValid = validatorjs[validate[i].validator].apply(null, clonedArgs);
 
       result.push({
@@ -150,7 +150,7 @@ function formatValues(values) {
 
 class Manager {
   stores = {};
-  
+
   // ===================
   // = ACTIONS SECTION =
   // ===================
@@ -161,7 +161,7 @@ class Manager {
       value: value
     });
   }
-  
+
   updateValueIfNotSet(formName, name, value) {
     this.handleUpdateValueIfNotSet({
       name: name,
@@ -169,7 +169,7 @@ class Manager {
       value: value
     });
   }
-  
+
   setValidators(formName, name, validators = {}) {
     this.handleSetValidators({
       name: name,
@@ -177,7 +177,7 @@ class Manager {
       validators: validators,
     });
   }
-  
+
   getValidators(formName, name) {
     var state = this.stores;
     if (typeof state[formName] !== 'undefined') {
@@ -195,13 +195,13 @@ class Manager {
   reset(formName) {
     this.handleReset(formName);
   }
-  
+
   // reset only the values
   // useful if the GiftedForm is not unmounted
   resetValues(formName) {
     this.handleResetValues(formName);
   }
-  
+
   clearSelect(formName, name) {
     this.handleClearSelect({
       name: name,
@@ -212,8 +212,8 @@ class Manager {
   validateAndParseOne(k = '', value = undefined, validators = {}) {
     return doParseResult(doValidateOne(k, value, validators), k);
   }
-  
-  validate(formName) {
+
+  validate(formName, displayInlineErrors=false) {
     var formInfo = this.stores[formName] || {};
     var validators = formInfo.validators || {};
 
@@ -222,17 +222,21 @@ class Manager {
       values = formatValues(this.stores[formName].values);
     } else {
       values = {};
-    }    
-    
+    }
+
     var result = null;
     var results = {};
-    
+
     for (let k in validators) {
       if (validators.hasOwnProperty(k)) {
         results[k] = doValidateOne(k, values[k], validators[k]);
       }
     }
-    
+
+    if(displayInlineErrors) {
+      this.highlightErrors();
+    }
+
     for (let k in results) {
       if (results.hasOwnProperty(k)) {
         for (let i = 0; i < results[k].length; i++) {
@@ -241,18 +245,19 @@ class Manager {
             return {isValid: false, results: results};
           }
         }
-      }      
+      }
     }
+
     return {isValid: true, results: results};
   }
-    
+
   getValues(formName) {
     if (typeof this.stores[formName] !== 'undefined') {
       return formatValues(this.stores[formName].values);
     }
     return {};
   }
-  
+
   getValue(formName, name) {
     if (typeof this.stores[formName] !== 'undefined') {
       if (typeof this.stores[formName].values === 'object') {
@@ -265,7 +270,7 @@ class Manager {
     }
     return null;
   }
-  
+
   // =================
   // = STORE SECTION =
   // =================
@@ -274,40 +279,40 @@ class Manager {
       this.stores[formName] = {values: {}, validators: {}};
     }
   }
-  
+
   handleSetValidators(obj) {
     this.initForm(obj.formName);
-    
+
     this.stores[obj.formName].validators[obj.name] = {
       validate: obj.validators.validate || [],
       title: obj.validators.title || '',
     };
   }
-  
+
   handleUpdateValue(obj) {
     this.initForm(obj.formName);
 
     this.stores[obj.formName].values[obj.name] = obj.value;
   }
-  
+
   handleReset(formName) {
     this.initForm(formName);
-    
+
     this.stores[formName] = {values: {}, validators: {}};
   }
 
   handleResetValues(formName) {
     this.initForm(formName);
-    
+
     if (typeof this.stores[formName] === 'undefined') {
       this.stores[formName] = {};
     }
     this.stores[formName].values = {};
   }
-  
+
   handleClearSelect(obj) {
     this.initForm(obj.formName);
-    
+
     for (var key in this.stores[obj.formName].values) {
       if (this.stores[obj.formName].values.hasOwnProperty(key)) {
         if (key.indexOf(obj.name) === 0) {
@@ -317,14 +322,12 @@ class Manager {
       }
     }
   }
-  
+
   handleUpdateValueIfNotSet(obj) {
     this.initForm(obj.formName);
-    
+
     if (typeof this.stores[obj.formName].values[obj.name] === 'undefined') {
-      console.log('obj.value');
-      console.log(obj.value);
-      this.stores[obj.formName].values[obj.name] = obj.value;      
+      this.stores[obj.formName].values[obj.name] = obj.value;
     }
   }
 }
