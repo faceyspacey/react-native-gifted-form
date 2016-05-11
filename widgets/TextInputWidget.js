@@ -48,7 +48,7 @@ module.exports = React.createClass({
     
     if (this.props.inline === false) {
       return (
-        <View style={this.getStyle(['rowContainer'])}>
+        <View ref='rowContainer' style={this.getStyle(['rowContainer'])}>
           <View style={this.getStyle(['titleContainer'])}>
             {this._renderImage()}
             <Text numberOfLines={1} style={this.getStyle(['textInputTitle'])}>{this.props.title}</Text>
@@ -101,7 +101,7 @@ module.exports = React.createClass({
     this.setState({
       focused: true,
     });
-    this.props.onFocus();
+    this.props.onFocus(this.refs.rowContainer);
     let oldText = this.state.value;
     let newText = this.props.onTextInputFocus(this.state.value);
     if (newText !== oldText) {
