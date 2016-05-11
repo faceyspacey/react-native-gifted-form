@@ -10,7 +10,7 @@ var {
 var GiftedFormManager = require('../GiftedFormManager');
 
 module.exports = {
-  
+
   propTypes: {
     formName: React.PropTypes.string,
     scrollOnTap: React.PropTypes.bool,
@@ -28,51 +28,40 @@ module.exports = {
       navigator: null, // @todo test when null if crash
     }
   },
-  
-  _onTouchStart(e) {
-    this._pageY = e.nativeEvent.pageY;
-    this._locationY = e.nativeEvent.locationY;
-  },
-  
-  _onScroll(e) {
-    this._y = e.nativeEvent.contentOffset.y;
-  },
-  
-  // https://facebook.github.io/react-native/docs/nativemethodsmixin.html#content
-  // I guess it can be improved by using height measures
-  handleFocus(scrollToTopOfWidget = false) {
-    if (Platform.OS !== 'android' && this.props.scrollEnabled === true) {
-      var keyboardHeight = 259;
-      if (this.props.scrollOnTap === true && this._pageY + this._locationY > Dimensions.get('window').height - keyboardHeight - 44) {
-        // @todo don't scroll lower than _contentSize
-        if (scrollToTopOfWidget === true) {
-          this._scrollResponder.scrollTo({
-            y: this._pageY - this._locationY - 44 - 30,
-            x: 0,
-            animated: false,
-          });
-        } else {
-          this._scrollResponder.scrollTo({
-            y: this._pageY + this._y - this._locationY - keyboardHeight + 44,
-            x: 0,
-            animated: false,
-          });
-        }
+
+  handleFocus(view) {
+    if(this.props.scrollEnabled !== true || typeof view !== 'object' || !view.measure) return;
+
+    var keyboardHeight = 259;
+    var keyboardTop = Dimensions.get('window').height - keyboardHeight;
+    
+    view.measure((x, y, width, height, pageX, pageY) => {
+      var inputBottom = pageY + height;
+
+      if(inputBottom > keyboardTop) {
+        this.scrollTo(y);
       }
-      // @todo don't change inset if external keyboard connected      
-      this.refs.container.setNativeProps({
-        contentInset: {top: 0, bottom: keyboardHeight, left: 0, right: 0},
-      });
+    });
+  },
+  scrollTo(y) {
+    this._scrollResponder.scrollTo({x: 0, y, animated: false});
+  },
+
+  componentDidMount() {
+    if (this.props.scrollEnabled === true) {
+      this._scrollResponder = this.refs.container.getScrollResponder();
+
+      console.log('HELP', this.refs.container, this.refs.container.measure)
+
+      //this.refs.container.measure((x, y, width, height) => {
+      //  this.containerHeight = height;
+      //  console.log('CONTAINER HEIGHT', x, y, width, height)
+      //});
     }
   },
-  
+
   handleBlur() {
-    if (Platform.OS !== 'android' && this.props.scrollEnabled === true) {
-      // @todo dont change inset if external keyboard connected
-      this.refs.container.setNativeProps({
-        contentInset: {top: 0, bottom: 0, left: 0, right: 0},
-      });
-    }
+    //not needed anymore for features related to scrolling to inputs
   },
 
   handleValidation() {
@@ -97,24 +86,14 @@ module.exports = {
           form: this,
           navigator: this.props.navigator,
           onFocus: this.handleFocus,
-          onBlur: this.handleBlur, 
+          onBlur: this.handleBlur,
           onValidation: this.handleValidation,
           onValueChange: this.handleValueChange,
         });
       }
     });
   },
-  
-  componentDidMount() {
-    this._y = 0;
-    this._pageY = 0;
-    this._locationY = 0;
-    
-    if (this.props.scrollEnabled === true) {
-      this._scrollResponder = this.refs.container.getScrollResponder();
-    }
-  },
-  
+
   _renderContainerView() {
     var formStyles = this.props.formStyles;
     var viewStyle = [(this.props.isModal === false ? [styles.containerView, formStyles.containerView] : [styles.modalView, formStyles.modalView]), this.props.style];
@@ -135,7 +114,7 @@ module.exports = {
         >
           {this.childrenWithProps()}
         </ScrollView>
-      ); 
+      );
     }
     return (
       <View
