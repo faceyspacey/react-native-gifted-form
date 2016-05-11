@@ -98,6 +98,14 @@ var GiftedForm = React.createClass({
     GiftedFormManager.highlightErrors = function() {
       self.highlightErrors();
     };
+    this.inputs = {};
+  },
+
+  highlightErrors() {
+    for (var key in this.inputs) {
+      var input = this.inputs[key];
+      input && input._validate && input._validate();
+    }
   },
 
   render() {
