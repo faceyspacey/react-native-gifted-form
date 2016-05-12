@@ -85,7 +85,7 @@ module.exports = React.createClass({
       errors: '',
     });
     
-    var validationResults = GiftedFormManager.validate(this.props.formName);
+    var validationResults = GiftedFormManager.validate(this.props.formName, !!this.props.displayInlineErrors);
     var values = GiftedFormManager.getValues(this.props.formName);
     
     if (validationResults.isValid === true) {
